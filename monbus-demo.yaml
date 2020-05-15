@@ -1,0 +1,600 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: API Gateway resource stack creation using Simplify CLI
+Parameters:
+  DeploymentStage:
+    Type: String
+    Default: 'latest'
+    AllowedValues:
+    - stable
+    - latest
+  ApiAuthorizerId:
+    Type: String
+  functionForGetTimetablesCustomResourceArn:
+    Type: String
+  functionForGetTimetablesResourcePermission:
+    Type: String
+  eventFunctionStationsSyncCustomResourceArn:
+    Type: String
+  eventFunctionStationsSyncResourcePermission:
+    Type: String
+  functionForStationsCustomResourceArn:
+    Type: String
+  functionForStationsResourcePermission:
+    Type: String
+
+Conditions:
+  HasFunctionForGetTimetablesCustomResourceArn: !Not [ !Equals [ !Ref functionForGetTimetablesCustomResourceArn, 'NO' ] ]
+  HasFunctionForGetTimetablesResourcePermission: !Not [ !Equals [ !Ref functionForGetTimetablesResourcePermission, 'NO' ] ]
+  HasEventFunctionStationsSyncCustomResourceArn: !Not [ !Equals [ !Ref eventFunctionStationsSyncCustomResourceArn, 'NO' ] ]
+  HasEventFunctionStationsSyncResourcePermission: !Not [ !Equals [ !Ref eventFunctionStationsSyncResourcePermission, 'NO' ] ]
+  HasFunctionForStationsCustomResourceArn: !Not [ !Equals [ !Ref functionForStationsCustomResourceArn, 'NO' ] ]
+  HasFunctionForStationsResourcePermission: !Not [ !Equals [ !Ref functionForStationsResourcePermission, 'NO' ] ]
+
+Resources:
+  monbusGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: 'monbusGateway Definitions'
+      Name: monbusGateway
+      Body:
+        swagger: '2.0'
+        info:
+          version: '2017-04-20T04:08:08Z'
+          title: monbusGateway        
+        host:
+          Fn::Join:
+          - ''
+          - - apigateway.
+            - Ref: AWS::Region
+            - ".amazonaws.com"
+        basePath:
+          Fn::Join:
+          - ''
+          - - "/"
+            - "0.0.1"
+        schemes:
+        - https
+        x-amazon-apigateway-request-validators:
+          Passthrough:
+            validateRequestParameters: false
+            validateRequestBody: false
+          Validate body:
+            validateRequestParameters: false
+            validateRequestBody: true
+          Validate query string parameters and headers:
+            validateRequestParameters: true
+            validateRequestBody: false
+        x-amazon-apigateway-request-validator: Passthrough
+        paths:
+          "/timetables":            
+            get:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              parameters:
+              - in: query
+                name: search
+                required: false
+              security:
+              - sigv4: []
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"                                    
+              x-amazon-apigateway-request-validator: Passthrough
+              x-amazon-apigateway-integration:                
+                responses:
+                  default:
+                    statusCode: '200'                
+                uri:
+                  Fn::Join:
+                  - ''
+                  - - 'arn:aws:apigateway:'
+                    - !Ref AWS::Region
+                    - ":lambda:path/2015-03-31/functions/"
+                    - !GetAtt functionForGetTimetablesLambdaFunction.Arn
+                    - "/invocations"                
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+          "/stations/{id}":            
+            post:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              parameters:
+              - in: body
+                name: RequestSchema
+                required: false
+                schema:
+                  "$ref": "#/definitions/RequestSchema"
+              security:
+              - APIKeyAuthorizer: []
+              - sigv4: []
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"                                    
+              x-amazon-apigateway-request-validator: Passthrough
+              x-amazon-apigateway-integration:                
+                responses:
+                  default:
+                    statusCode: '200'                
+                uri:
+                  Fn::Join:
+                  - ''
+                  - - 'arn:aws:apigateway:'
+                    - !Ref AWS::Region
+                    - ":lambda:path/2015-03-31/functions/"
+                    - !GetAtt functionForStationsLambdaFunction.Arn
+                    - "/invocations"                
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+          "/stations":            
+            get:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              parameters:
+              - in: query
+                name: search
+                required: false
+              security:
+              - APIKeyAuthorizer: []
+              - sigv4: []
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"                                    
+              x-amazon-apigateway-request-validator: Passthrough
+              x-amazon-apigateway-integration:                
+                responses:
+                  default:
+                    statusCode: '200'                
+                uri:
+                  Fn::Join:
+                  - ''
+                  - - 'arn:aws:apigateway:'
+                    - !Ref AWS::Region
+                    - ":lambda:path/2015-03-31/functions/"
+                    - !GetAtt functionForStationsLambdaFunction.Arn
+                    - "/invocations"                
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+        securityDefinitions:
+          sigv4:
+            type: apiKey
+            name: Authorization
+            in: header
+            x-amazon-apigateway-authtype: awsSigv4
+          APIKeyAuthorizer:
+            type: apiKey
+            name: x-api-key
+            in: header
+        definitions:
+          RequestSchema:
+            type: object
+            required:
+            - data
+            properties:
+              data:
+                type: object
+            title: Request Schema
+          ResponseSchema:
+            type: object
+            required:
+            - data
+            properties:
+              data:
+                type: object
+            title: Response Schema        
+      FailOnWarnings: true
+
+  monbusGatewayAPIGateWayDeployment:
+    DependsOn: monbusGateway
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: The Development stage deployment of monbusGateway API.
+      StageName: !Ref DeploymentStage
+      RestApiId:
+        !Ref monbusGateway
+
+  monbusGatewayAPIGateWayUsagePlan:
+    DependsOn: monbusGatewayAPIGateWayDeployment
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      Description: The quota limits of monbusGateway API.
+      UsagePlanName: DefaultPlan
+      ApiStages:
+      - ApiId: !Ref monbusGateway
+        Stage: !Ref DeploymentStage
+      Throttle:
+        BurstLimit: 1000
+        RateLimit: 100
+      Quota:
+        Limit: 1000
+        Period: "DAY"
+
+  functionForGetTimetablesLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      aws:asset:path: "./src"
+      aws:asset:property: Code
+    Properties:
+      Handler: index.handler      
+      Environment:
+        Variables:
+          DEPLOYMENT:
+            !Ref DeploymentStage
+      Role:
+        Fn::GetAtt:
+        - functionForGetTimetablesLambdaExecutionRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: '15'
+      Code:
+        ZipFile: |
+          exports.handler = function (event, context) { context.succeed({ statusCode: 200, body: JSON.stringify({}) })}
+
+  functionForGetTimetablesLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:      
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - !If [HasFunctionForGetTimetablesResourcePermission, !Ref functionForGetTimetablesResourcePermission, !Ref "AWS::NoValue"]
+
+  functionForGetTimetablesLambdaExecutionPolicy:
+    DependsOn:
+    - functionForGetTimetablesLambdaExecutionRole
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Join:
+        - ""
+        - - !Ref functionForGetTimetablesLambdaFunction
+          - LambdaExecutionRole
+      Roles:
+      - !Ref functionForGetTimetablesLambdaExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub:
+            - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${groupname}:log-stream:*
+            - region:
+                !Ref AWS::Region
+              account:
+                !Ref AWS::AccountId
+              groupname:
+                !Ref functionForGetTimetablesLambdaFunction
+
+  functionForGetTimetablesLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: functionForGetTimetablesLambdaFunction
+    Properties:
+      LogGroupName:
+        Fn::Join:
+        - ""
+        - - '/aws/lambda/'
+          - !Ref functionForGetTimetablesLambdaFunction
+      RetentionInDays: 14
+
+
+  functionForGetTimetablesCustomResource:
+    Condition: HasFunctionForGetTimetablesCustomResourceArn
+    DependsOn:
+    - functionForGetTimetablesLambdaFunction
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref functionForGetTimetablesCustomResourceArn
+
+  functionForGetTimetablesLambdaApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref functionForGetTimetablesLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref monbusGateway
+          - "/*/*/*"
+
+  eventFunctionStationsSyncLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      aws:asset:path: "./src"
+      aws:asset:property: Code
+    Properties:
+      Handler: index.handler      
+      Environment:
+        Variables:
+          DEPLOYMENT:
+            !Ref DeploymentStage
+      Role:
+        Fn::GetAtt:
+        - eventFunctionStationsSyncLambdaExecutionRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: '15'
+      Code:
+        ZipFile: |
+          exports.handler = function (event, context) { context.succeed({ statusCode: 200, body: JSON.stringify({}) })}
+
+  eventFunctionStationsSyncLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:      
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - !If [HasEventFunctionStationsSyncResourcePermission, !Ref eventFunctionStationsSyncResourcePermission, !Ref "AWS::NoValue"]
+
+  eventFunctionStationsSyncLambdaExecutionPolicy:
+    DependsOn:
+    - eventFunctionStationsSyncLambdaExecutionRole
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Join:
+        - ""
+        - - !Ref eventFunctionStationsSyncLambdaFunction
+          - LambdaExecutionRole
+      Roles:
+      - !Ref eventFunctionStationsSyncLambdaExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub:
+            - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${groupname}:log-stream:*
+            - region:
+                !Ref AWS::Region
+              account:
+                !Ref AWS::AccountId
+              groupname:
+                !Ref eventFunctionStationsSyncLambdaFunction
+
+  eventFunctionStationsSyncLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: eventFunctionStationsSyncLambdaFunction
+    Properties:
+      LogGroupName:
+        Fn::Join:
+        - ""
+        - - '/aws/lambda/'
+          - !Ref eventFunctionStationsSyncLambdaFunction
+      RetentionInDays: 14
+
+
+  eventFunctionStationsSyncCustomResource:
+    Condition: HasEventFunctionStationsSyncCustomResourceArn
+    DependsOn:
+    - eventFunctionStationsSyncLambdaFunction
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref eventFunctionStationsSyncCustomResourceArn
+
+  eventFunctionStationsSyncLambdaApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref eventFunctionStationsSyncLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref monbusGateway
+          - "/*/*/*"
+
+  eventFunctionStationsSyncScheduledRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: ScheduledRule
+      ScheduleExpression: rate(15 days)
+      State: ENABLED
+      Targets: 
+        - Arn: !GetAtt eventFunctionStationsSyncLambdaFunction.Arn
+          Id: eventFunctionStationsSyncTargetFunction
+
+  eventFunctionStationsSyncPermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref eventFunctionStationsSyncLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt eventFunctionStationsSyncScheduledRule.Arn
+  functionForStationsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      aws:asset:path: "./src"
+      aws:asset:property: Code
+    Properties:
+      Handler: index.handler      
+      Environment:
+        Variables:
+          DEPLOYMENT:
+            !Ref DeploymentStage
+      Role:
+        Fn::GetAtt:
+        - functionForStationsLambdaExecutionRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: '15'
+      Code:
+        ZipFile: |
+          exports.handler = function (event, context) { context.succeed({ statusCode: 200, body: JSON.stringify({}) })}
+
+  functionForStationsLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:      
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - !If [HasFunctionForStationsResourcePermission, !Ref functionForStationsResourcePermission, !Ref "AWS::NoValue"]
+
+  functionForStationsLambdaExecutionPolicy:
+    DependsOn:
+    - functionForStationsLambdaExecutionRole
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Join:
+        - ""
+        - - !Ref functionForStationsLambdaFunction
+          - LambdaExecutionRole
+      Roles:
+      - !Ref functionForStationsLambdaExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - Fn::Sub:
+            - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${groupname}:log-stream:*
+            - region:
+                !Ref AWS::Region
+              account:
+                !Ref AWS::AccountId
+              groupname:
+                !Ref functionForStationsLambdaFunction
+
+  functionForStationsLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: functionForStationsLambdaFunction
+    Properties:
+      LogGroupName:
+        Fn::Join:
+        - ""
+        - - '/aws/lambda/'
+          - !Ref functionForStationsLambdaFunction
+      RetentionInDays: 14
+
+
+  functionForStationsCustomResource:
+    Condition: HasFunctionForStationsCustomResourceArn
+    DependsOn:
+    - functionForStationsLambdaFunction
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref functionForStationsCustomResourceArn
+
+  functionForStationsLambdaApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref functionForStationsLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref monbusGateway
+          - "/*/*/*"
+
+
+Outputs:
+  Region:
+    Description: AWS Deployment Region
+    Value: !Ref AWS::Region
+  GatewayUrl:
+    Description: Root URL of the API gateway
+    Value:
+      Fn::Join:
+      - ''
+      - - https://
+        - !Ref monbusGateway
+        - ".execute-api."
+        - !Ref AWS::Region
+        - ".amazonaws.com/"
+        - !Ref DeploymentStage
+  GatewayId:
+    Description: API Gateway id
+    Value: !Ref monbusGateway
+  StageName:
+    Description: API Deployment stage
+    Value: !Ref DeploymentStage
+  functionForGetTimetablesFunctionArn:
+    Description: FunctionForGetTimetables Function ARN
+    Value: !GetAtt functionForGetTimetablesLambdaFunction.Arn
+  functionForGetTimetablesFunctionName:
+    Description: FunctionForGetTimetables Function Name
+    Value: !Ref functionForGetTimetablesLambdaFunction
+  functionForGetTimetablesFunctionRole:
+    Description: FunctionForGetTimetables Execution Role ARN
+    Value: !GetAtt functionForGetTimetablesLambdaExecutionRole.Arn
+  eventFunctionStationsSyncFunctionArn:
+    Description: EventFunctionStationsSync Function ARN
+    Value: !GetAtt eventFunctionStationsSyncLambdaFunction.Arn
+  eventFunctionStationsSyncFunctionName:
+    Description: EventFunctionStationsSync Function Name
+    Value: !Ref eventFunctionStationsSyncLambdaFunction
+  eventFunctionStationsSyncFunctionRole:
+    Description: EventFunctionStationsSync Execution Role ARN
+    Value: !GetAtt eventFunctionStationsSyncLambdaExecutionRole.Arn
+  functionForStationsFunctionArn:
+    Description: FunctionForStations Function ARN
+    Value: !GetAtt functionForStationsLambdaFunction.Arn
+  functionForStationsFunctionName:
+    Description: FunctionForStations Function Name
+    Value: !Ref functionForStationsLambdaFunction
+  functionForStationsFunctionRole:
+    Description: FunctionForStations Execution Role ARN
+    Value: !GetAtt functionForStationsLambdaExecutionRole.Arn

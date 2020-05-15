@@ -1,0 +1,31 @@
+{
+    "Profile": "simplify-eu",
+    "Region": "eu-west-1",
+    "Bucket": {
+        "Name": "monbus-demo-32747471",
+        "Key": "stacks/${DATE_TODAY}"
+    },
+    "OutputFile": "monbus-demo-meta.json",
+    "Deployment": {
+        "Name": "monbusDemo",
+        "Definition": "monbus-demo.yaml",
+        "Authorizer": "",
+        "Functions": {
+            "functionForGetTimetables": {
+                "FunctionInput": "./monbusRestapi/functionForGetTimetables/function-input.json",
+                "CustomResourceArn": "NO",
+                "ResourcePermission": "NO"
+            }, 
+            "eventFunctionStationsSync": {
+                "FunctionInput": "./monbusRestapi/eventFunctionStationsSync/function-input.json",
+                "CustomResourceArn": "NO",
+                "ResourcePermission": "NO"
+            }, 
+            "functionForStations": {
+                "FunctionInput": "./monbusRestapi/functionForStations/function-input.json",
+                "CustomResourceArn": "NO",
+                "ResourcePermission": "NO"
+            }
+        }
+    }
+}

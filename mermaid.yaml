@@ -1,0 +1,18 @@
+stateDiagram
+  [*] --> monbusGateway
+    monbusGateway --> functionForGetTimetables
+    monbusGateway --> functionForStations
+
+    functionForGetTimetables:  Sigv4 IAM
+    functionForStations: API Key Sigv4 IAM
+
+    functionForGetTimetables --> getTimetables: GET /timetables
+    eventFunctionStationsSync --> putEventsStationsSync: PUT /events/stations-sync
+    eventFunctionStationsSync --> eventFunctionStationsSync: scheduled by rate(15 days)
+    functionForStations --> fetchTimeByStation: POST /stations/{id}
+    functionForStations --> getStations: GET /stations
+    
+    getTimetables --> timetables
+    putEventsStationsSync --> eventsStationsSync
+    fetchTimeByStation --> peoplePets
+    getStations --> stations

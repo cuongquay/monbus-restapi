@@ -1,0 +1,15 @@
+{
+    "name": "function-for-get-timetables",
+    "version": "0.1.1",
+    "description": "FunctionForGetTimetables The monbus rest-api with serverless pattern",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "license": "MIT",
+    "private": true,
+    "dependencies": {
+        "express": "^4.17.1",
+        "debug": "^4.1.1"
+    }
+}

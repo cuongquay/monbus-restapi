@@ -1,0 +1,37 @@
+{
+    "name": "function-for-stations",
+    "version": "0.1.1",
+    "description": "The monbus rest-api with serverless pattern",
+    "main": "app.js",
+    "scripts": {
+        "deploy": "env FUNCTION_SOURCE=dist node function-push.js",
+        "build": "webpack -p --config webpack.config.js",
+        "deploy-layer": "env LAYER_SOURCE=layer node layer-push.js",
+        "build-layer": "webpack -p --config webpack.config.layer.js",
+        "production": "webpack -p && env LOCAL_DEBUG= node dist/index.js",
+        "development": "webpack --mode development && env LOCAL_DEBUG=YES node dist/index.js",
+        "start": "cd src && npm install && env LOCAL_DEBUG=YES DEPLOYMENT_STAGE=latest node app.js",
+        "code-scan": "bash sonarqube-scanner.sh"
+    },
+    "license": "MIT",
+    "private": true,
+    "dependencies": {
+        "yaml": "^1.9.2",
+        "debug": "^4.1.1"
+    },
+    "devDependencies": {
+        "simplify-sdk": "^0.1.6",
+        "aws-sdk": "^2.635.0",
+        "adm-zip": "^0.4.14",
+        "@babel/cli": "^7.8.4",
+        "@babel/core": "^7.9.6",
+        "@babel/node": "^7.7.4",
+        "@babel/preset-env": "^7.9.6",
+        "@babel/register": "^7.9.0",
+        "babel-loader": "^8.1.0",
+        "file-loader": "^6.0.0",
+        "webpack": "^4.43.0",
+        "webpack-cli": "^3.3.11",
+        "webpack-node-externals": "^1.7.2"
+    }
+}

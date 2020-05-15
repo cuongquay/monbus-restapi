@@ -1,0 +1,36 @@
+{
+    "Profile": "simplify-eu",
+    "Region": "eu-west-1",
+    "Bucket": {
+        "Name": "monbus-restapi-32747471",
+        "Key": "functions/event-function-stations-sync/${DATE_TODAY}/builds"
+    },
+    "OutputFile": "function-meta.json",
+    "Layer": {
+        "CompatibleRuntimes": [
+            "nodejs12.x"
+        ],
+        "LayerName": "event-function-stations-sync"
+    },
+    "Function": {
+        "FunctionName": "monbusDemo-eventFunctionStationsSyncLambdaFunction-1DV5QWLYYXL83",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Publish": true,
+        "Role": "arn:aws:iam::636275562948:role/monbusDemo-eventFunctionStationsSyncLambdaExecutio-10D3U2G7T2781",
+        "Runtime": "nodejs12.x",
+        "Tags": {
+            "GroupName": ""
+        },
+        "Timeout": 15,
+        "TracingConfig": {
+            "Mode": "PassThrough"
+        },
+        "Environment": {
+            "Variables": {
+                "DEPLOYMENT_STAGE": "${DEPLOYMENT_STAGE}",
+                "ENFORCEMENT_PACKAGE": "${ENFORCEMENT_PACKAGE}"
+            }
+        }
+    }
+}

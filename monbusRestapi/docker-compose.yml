@@ -1,0 +1,31 @@
+version: '3.3'
+services:
+  function-for-get-timetables:
+    build:
+      context: ./functionForGetTimetables/    
+    environment:
+      - LOG_LEVEL=info
+    restart: always
+  event-function-stations-sync:
+    build:
+      context: ./eventFunctionStationsSync/    
+    environment:
+      - LOG_LEVEL=info
+    restart: always
+  function-for-stations:
+    build:
+      context: ./functionForStations/    
+    environment:
+      - LOG_LEVEL=info
+    restart: always
+  monbus-gateway:
+    image: nginx
+    ports:
+      - 80:8080
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/gateway.conf
+    restart: always
+    depends_on:
+    - function-for-get-timetables
+    - event-function-stations-sync
+    - function-for-stations

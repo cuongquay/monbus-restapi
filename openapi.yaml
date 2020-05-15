@@ -1,0 +1,92 @@
+openapi: 3.0.0
+info:
+  version: 0.0.1
+  title: The monbus rest-api with serverless pattern
+x-project-name: monbus-restapi
+x-deployment-name: monbus-demo
+x-deployment-region: eu-west-1
+x-deployment-profile: simplify-eu
+x-api-gateway-name: monbus-gateway
+x-api-rate-limit: 100
+x-api-quota-limit: 1000
+x-api-quota-unit: DAY
+x-api-burst-limit: 1000
+paths:
+  /timetables:
+    x-api-service-name: function-for-get-timetables
+    x-api-service-template: flatted
+    x-api-service-public: true
+    get:
+      responses:
+        "200":
+          description: Success
+  /events/stations-sync:
+    x-event-service-schedule: rate(15 days)
+    x-api-service-public: false
+    x-event-service-name: event-function-stations-sync
+    x-event-service-template: flatted
+    x-event-service-key-vault: false
+    put:
+      description: Run on scheduled event for stations synchronization
+      responses:
+        "200":
+          description: Success
+  "/stations/{id}":
+    x-api-service-public: true
+    x-api-service-authorizer: true
+    x-api-service-api-key: true
+    x-api-service-name: function-for-stations
+    x-api-service-model-name: people-pets
+    post:
+      tags:
+        - Stations Service Group
+      description: Watch a realtime bus stop by StationId
+      operationId: fetchTimeByStation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Send my location information
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lat:
+                  type: number
+                long:
+                  type: number
+      responses:
+        "200":
+          description: Success
+  /stations:
+    x-api-service-public: true
+    x-api-service-name: function-for-stations
+    x-api-service-model-name: stations
+    x-api-service-authorizer: true
+    x-api-service-api-key: true
+    get:
+      tags:
+        - Stations Service Group
+      description: Get Stations Information
+      operationId: getStations
+      responses:
+        "200":
+          description: Success
+  /hystrix.stream:
+    get:
+      description: hystrix server-sent event stream
+      responses:
+        "200":
+          description: hystrix server-sent event response
+          content:
+            text/event-stream:
+              schema:
+                type: object
+servers:
+  - url: /
+x-project-id: 32747471

@@ -1,0 +1,11 @@
+.DS_STORE
+.DS_Store
+**/node_modules
+**/dist
+**/layer
+**/builds
+static
+.module-cache
+*.log*
+**-meta.json
+**workspace

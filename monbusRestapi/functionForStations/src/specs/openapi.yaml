@@ -1,0 +1,66 @@
+openapi: 3.0.0
+info:
+  version: 0.0.1
+  title: The monbus rest-api with serverless pattern
+x-project-name: monbus-restapi
+paths:
+  /timetables:
+    get:
+      responses:
+        "200":
+          description: Success
+  /events/stations-sync:
+    put:
+      description: Run on scheduled event for stations synchronization
+      responses:
+        "200":
+          description: Success
+  "/stations/{id}":
+    post:
+      tags:
+        - Stations Service Group
+      description: Watch a realtime bus stop by StationId
+      operationId: fetchTimeByStation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Send my location information
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lat:
+                  type: number
+                long:
+                  type: number
+      responses:
+        "200":
+          description: Success
+  /stations:
+    get:
+      tags:
+        - Stations Service Group
+      description: Get Stations Information
+      operationId: getStations
+      responses:
+        "200":
+          description: Success
+  /hystrix.stream:
+    get:
+      description: hystrix server-sent event stream
+      responses:
+        "200":
+          description: hystrix server-sent event response
+          content:
+            text/event-stream:
+              schema:
+                type: object
+servers:
+  - url: /
+x-project-id: 32747471

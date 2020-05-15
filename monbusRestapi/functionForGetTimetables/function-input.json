@@ -1,0 +1,36 @@
+{
+    "Profile": "simplify-eu",
+    "Region": "eu-west-1",
+    "Bucket": {
+        "Name": "monbus-restapi-32747471",
+        "Key": "functions/function-for-get-timetables/${DATE_TODAY}/builds"
+    },
+    "OutputFile": "function-meta.json",
+    "Layer": {
+        "CompatibleRuntimes": [
+            "nodejs12.x"
+        ],
+        "LayerName": "function-for-get-timetables"
+    },
+    "Function": {
+        "FunctionName": "monbusDemo-functionForGetTimetablesLambdaFunction-9BQ82426TTD7",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Publish": true,
+        "Role": "arn:aws:iam::636275562948:role/monbusDemo-functionForGetTimetablesLambdaExecution-KIEWA9BEMUVB",
+        "Runtime": "nodejs12.x",
+        "Tags": {
+            "GroupName": ""
+        },
+        "Timeout": 15,
+        "TracingConfig": {
+            "Mode": "PassThrough"
+        },
+        "Environment": {
+            "Variables": {
+                "DEPLOYMENT_STAGE": "${DEPLOYMENT_STAGE}",
+                "ENFORCEMENT_PACKAGE": "${ENFORCEMENT_PACKAGE}"
+            }
+        }
+    }
+}
